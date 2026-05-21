@@ -117,3 +117,31 @@ GitNexus tools (`mcp__gitnexus__*`) là deferred tools — schema chưa được
 
 **How to apply:** Không fallback sang Explore hoặc Grep khi cần dữ liệu từ graph. Luôn load schema qua ToolSearch rồi mới gọi tool.
 ```
+
+---
+
+## Skills đã thêm
+
+Skills là các slash command tùy chỉnh, lưu trong `~/.claude/skills/<skill-name>/SKILL.md`.
+
+Gọi trong Claude Code bằng cú pháp: `/<skill-name>`
+
+### `writing-skills`
+
+Hướng dẫn tạo Claude Agent Skills đúng chuẩn theo Anthropic spec. Dùng khi cần viết, tạo, sửa hoặc review một file SKILL.md. **Bắt buộc invoke trước khi viết bất kỳ SKILL.md nào.**
+
+### `brainstorming`
+
+Phỏng vấn người dùng liên tục về một kế hoạch hoặc thiết kế cho đến khi đạt được sự đồng thuận. Đi qua từng nhánh của cây quyết định, đặt câu hỏi từng cái một và đề xuất câu trả lời cho mỗi câu. Dùng khi muốn stress-test một plan hoặc design.
+
+### `comparing-implementations`
+
+So sánh hai implementation (triển khai) song song của cùng một khái niệm theo góc nhìn senior reviewer — phân loại loại object, áp dụng tiêu chí phù hợp, đưa ra verdict kèm dẫn chứng `file:line`. Dùng khi muốn đánh giá v1 vs v2 để chọn cái nào giữ lại. **Không dùng** để review uncommitted changes hoặc khi chỉ có một version.
+
+### `reviewing-code`
+
+Review các thay đổi local chưa commit (staged + unstaged + untracked) theo góc nhìn senior reviewer — điều tra intent và impact qua GitNexus, sau đó xuất báo cáo markdown vào `.claude/reviews/`. Dùng khi nói "review my changes", "check my changes", hoặc "is this ready to merge?".
+
+### `answering-design-questions`
+
+Trả lời câu hỏi về thiết kế hệ thống và kiến trúc — đưa ra kết luận/đề xuất ngay trước, sau đó mới mở rộng bằng bảng, sơ đồ hoặc danh sách. Dùng khi hỏi "thiết kế như nào", "design X", "how should X work". **Không dùng** cho bug fix, code review hoặc implementation.
