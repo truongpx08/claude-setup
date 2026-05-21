@@ -103,72 +103,38 @@ ctx:42% | claude-sonnet-4-6 | 5h:18% 7d:5%
 
 ## Thêm Memory vào dự án
 
-Memory (bộ nhớ) là các file `.md` lưu trong `~/.claude/projects/<project>/memory/`, giúp Claude ghi nhớ feedback (phản hồi) và hành vi qua các session.
+Memory là các file `.md` giúp Claude ghi nhớ hành vi qua các session. Lưu tại:
 
-Dưới đây là 3 memory đã được thêm vào dự án này và cách tạo lại chúng.
+```
+~/.claude/projects/<tên-project>/memory/
+```
 
-### 1. `feedback_writing_skills.md`
+Dự án này có 3 memory sau:
 
-Luôn invoke skill `writing-skills` trước khi viết bất kỳ SKILL.md nào.
+| File | Nội dung |
+|------|----------|
+| `feedback_writing_skills.md` | Luôn gọi skill `writing-skills` trước khi viết SKILL.md |
+| `feedback_terminology_language.md` | Thuật ngữ tiếng Anh — giải thích tiếng Việt lần đầu, không lặp lại |
+| `feedback_gitnexus_toolsearch.md` | GitNexus là deferred tools — PHẢI gọi `ToolSearch` trước khi dùng |
 
-Tạo file `~/.claude/projects/<project>/memory/feedback_writing_skills.md`:
+**Cách tạo một memory file:**
 
 ```markdown
 ---
-name: feedback-writing-skills
-description: Luôn invoke skill writing-skills trước khi viết bất kỳ SKILL.md nào
+name: tên-memory
+description: Mô tả ngắn
 metadata:
   type: feedback
 ---
 
-Luôn invoke skill `writing-skills` trước khi viết bất kỳ SKILL.md nào.
+Nội dung rule.
 
-**Why:** Skill này cung cấp spec chính thức và các pattern chuẩn để tạo skill đúng cấu trúc.
+**Why:** Lý do.
 
-**How to apply:** Bất cứ khi nào user yêu cầu tạo/viết/sửa một file SKILL.md, gọi `Skill(writing-skills)` trước tiên, trước khi viết bất kỳ nội dung nào.
+**How to apply:** Cách áp dụng.
 ```
 
-### 2. `feedback_terminology_language.md`
-
-Thuật ngữ tiếng Anh — mở ngoặc tiếng Việt lần đầu, không lặp lại ở các lần sau.
-
-Tạo file `~/.claude/projects/<project>/memory/feedback_terminology_language.md`:
-
-```markdown
----
-name: feedback-terminology-language
-description: Thuật ngữ tiếng Anh — mở ngoặc tiếng Việt lần đầu, không lặp lại ở các lần sau
-metadata:
-  type: feedback
----
-
-Khi dùng thuật ngữ kỹ thuật tiếng Anh, chỉ giải thích tiếng Việt trong ngoặc lần đầu xuất hiện. Các lần sau dùng thẳng thuật ngữ tiếng Anh.
-
-**Why:** Tránh lặp thừa, giữ văn phong gọn và chuyên nghiệp.
-
-**How to apply:** Ví dụ: "Dependency Injection (tiêm phụ thuộc)" lần đầu, sau đó chỉ viết "Dependency Injection" hoặc "DI".
-```
-
-### 3. `feedback_gitnexus_toolsearch.md`
-
-GitNexus là deferred tools — PHẢI gọi `ToolSearch` trước, không fallback sang Explore/Grep.
-
-Tạo file `~/.claude/projects/<project>/memory/feedback_gitnexus_toolsearch.md`:
-
-```markdown
----
-name: feedback-gitnexus-toolsearch
-description: GitNexus là deferred tools: PHẢI gọi ToolSearch trước, không fallback sang Explore/Grep
-metadata:
-  type: feedback
----
-
-GitNexus tools (`mcp__gitnexus__*`) là deferred tools — schema chưa được load sẵn. PHẢI gọi `ToolSearch(query: "select:mcp__gitnexus__<tool>")` trước khi dùng bất kỳ GitNexus tool nào.
-
-**Why:** Gọi trực tiếp mà không ToolSearch trước sẽ fail với InputValidationError vì schema chưa có.
-
-**How to apply:** Không fallback sang Explore hoặc Grep khi cần dữ liệu từ graph. Luôn load schema qua ToolSearch rồi mới gọi tool.
-```
+Sau khi tạo file, Claude sẽ tự động đọc và áp dụng trong các session tiếp theo.
 
 ---
 
