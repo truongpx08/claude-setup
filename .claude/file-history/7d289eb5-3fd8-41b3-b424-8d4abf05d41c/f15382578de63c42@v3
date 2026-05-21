@@ -1,0 +1,143 @@
+using _Base;
+using _Game;
+using _Game.Sound;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+public class LevelNode : MonoBehaviour, IPointerClickHandler
+{
+    public enum State { Locked, Available, Completed }
+
+    [Header("State Visuals")]
+    [SerializeField] private GameObject lockedVisual;
+    [SerializeField] private GameObject availableVisual;
+    [SerializeField] private GameObject completedVisual;
+    [SerializeField] private GameObject icon;
+
+    [Header("Stars")]
+    [SerializeField] private GameObject[] starOnObjects;
+    [SerializeField] private GameObject[] starOffObjects;
+
+    [Header("References")]
+    [SerializeField] private TextMeshPro levelText;
+
+    [SerializeField] private int _level;
+
+#if UNITY_EDITOR
+    public void EditorSetLevel(int level) => _level = level;
+#endif
+    private State _currentState;
+    public State CurrentState => _currentState;
+    public Transform IconTransform => icon ? icon.transform : null;
+
+    private void Awake()
+    {
+        LobbyEvents.OnEnterBuildMode += OnEnterBuildMode;
+        LobbyEvents.OnExitBuildMode += OnExitBuildMode;
+        TutorialLv2StartActions.ShowLobbyFog += HideIcon;
+    }
+
+    private void OnDestroy()
+    {
+        LobbyEvents.OnEnterBuildMode -= OnEnterBuildMode;
+        LobbyEvents.OnExitBuildMode -= OnExitBuildMode;
+        TutorialLv2StartActions.ShowLobbyFog -= HideIcon;
+    }
+
+    private void HideIcon()
+    {
+        if (icon != null) icon.SetActive(false);
+    }
+
+    private void OnEnterBuildMode(int _) => gameObject.SetActive(false);
+    private void OnExitBuildMode() => gameObject.SetActive(true);
+
+    public void Init(int level)
+    {
+        _level = level;
+
+        int maxGlobal = DataSave.LevelData.GetMaxLevel();
+
+        if (level < maxGlobal)
+            ApplyState(State.Completed);
+        else if (level == maxGlobal)
+            ApplyState(State.Available);
+        else
+            ApplyState(State.Locked);
+
+        if (levelText != null)
+            levelText.text = level.ToString();
+
+        UpdateStars(level);
+    }
+
+    private void UpdateStars(int level)
+    {
+        if (starOnObjects == null || starOnObjects.Length == 0) return;
+
+        int earned = DataSave.LevelStarsData.GetStars(level);
+        for (int i = 0; i < starOnObjects.Length; i++)
+        {
+            if (starOnObjects[i] != null)
+                starOnObjects[i].SetActive(i < earned);
+        }
+    }
+
+    private void ApplyState(State state)
+    {
+        _currentState = state;
+        if (lockedVisual != null) lockedVisual.SetActive(state == State.Locked);
+        if (availableVisual != null) availableVisual.SetActive(state == State.Available);
+        if (completedVisual != null) completedVisual.SetActive(state == State.Completed);
+        if (icon != null) icon.SetActive(state == State.Available);
+
+        bool showStars = state == State.Completed;
+        foreach (var go in starOnObjects) if (go != null) go.SetActive(false);
+        foreach (var go in starOffObjects) if (go != null) go.SetActive(showStars);
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        OnTap();
+    }
+
+    private void OnTap()
+    {
+        SoundManager.Instance.PlayOneShot(SoundType.click);
+        if (DataSave.ResourceData.heart <= 0)
+        {
+            _ = UIManager.Instance.Popup.ShowPopup<PopupGetMoreHeart>();
+            return;
+        }
+        switch (_currentState)
+        {
+            case State.Locked:
+                _ = UIManager.Instance.Popup.ShowPopup<PopupLocked>(popup =>
+                    {
+                        popup.Init("Play Previous Level to unlock this level");
+                        popup.SetTextButtonOk("Got it!");
+                    });
+                break;
+            case State.Completed:
+                // Replay level cũ — set Cur về level đã chọn, Max Level không thay đổi
+                DataSave.LevelData.StartLevel(_level);
+                _ = UIManager.Instance.Popup.ShowPopup<PopupPlay>(popup => popup.Init());
+                break;
+            case State.Available:
+                if (DataSave.LevelData.IsLastLevel())
+                {
+                    _ = UIManager.Instance.Popup.ShowPopup<PopupLocked>(popup =>
+                    {
+                        popup.SetActiveCat(true);
+                        popup.Init("Coming soon");
+                    });
+                    return;
+                }
+                // Available: chơi level tiến trình hiện tại
+                DataSave.LevelData.StartMaxLevel();
+                _ = UIManager.Instance.Popup.ShowPopup<PopupPlay>(popup => popup.Init());
+                break;
+        }
+    }
+}

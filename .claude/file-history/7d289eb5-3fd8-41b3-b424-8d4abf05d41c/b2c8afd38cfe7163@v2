@@ -1,0 +1,98 @@
+using _Game;
+using DG.Tweening;
+using UnityEngine;
+
+/// <summary>
+/// Orchestrator của Tutorial Lv2 Start Sequence.
+/// Fire actions theo thứ tự → các subscriber (WorldMap, NPC…) tự xử lý visual.
+/// WorldMap.Start() gọi Begin() nếu IsActive().
+/// </summary>
+public class TutorialLv2Start : MonoBehaviour, ITutorial
+{
+    // ----------------------------------------------------------
+    //  State check
+    // ----------------------------------------------------------
+
+    public bool IsActive() =>
+        DataSave.TutorialData.isLv1EndSequenceComplete &&
+        !DataSave.TutorialData.isLv2StartTutComplete;
+
+    // ----------------------------------------------------------
+    //  Entry point — WorldMap gọi khi vào Lobby lần đầu
+    // ----------------------------------------------------------
+
+    public void Begin()
+    {
+        if (!IsActive()) return;
+
+        ShowLobbyFog();
+        DOVirtual.DelayedCall(4.5f, () => ShowNPC());
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 1 — Bật anim fog (anim tự xử lý tàu đến + mây bay ra)
+    // ----------------------------------------------------------
+
+    public void ShowLobbyFog()
+    {
+        TutorialLv2StartActions.ShowLobbyFog?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 3 — NPC xuất hiện nói chuyện
+    // ----------------------------------------------------------
+
+    public void ShowNPC()
+    {
+        TutorialLv2StartActions.ShowNPC?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 4 — NPC biến mất → chuyển sang phase tiếp theo
+    // ----------------------------------------------------------
+
+    public void HideNPC()
+    {
+        TutorialLv2StartActions.HideNPC?.Invoke();
+        AnimateLevelIcon();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 5 — Icon player nhảy lên level 2
+    // ----------------------------------------------------------
+
+    public void AnimateLevelIcon()
+    {
+        TutorialLv2StartActions.AnimateLevelIcon?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 6 — Button level xuất hiện + bàn tay chỉ
+    // ----------------------------------------------------------
+
+    public void ShowLevelButton()
+    {
+        TutorialLv2StartActions.ShowLevelButton?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 7 — Popup xuất hiện + bàn tay chỉ nút play
+    // ----------------------------------------------------------
+
+    public void ShowLevelPopup()
+    {
+        TutorialLv2StartActions.ShowLevelPopup?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 8 — Hoàn thành tutorial (player play hoặc tắt popup)
+    // ----------------------------------------------------------
+
+    public void CompleteTutorial()
+    {
+        if (!IsActive()) return;
+
+        DataSave.TutorialData.SetLv2StartTutComplete();
+        TutorialLv2StartActions.CompleteTutorial?.Invoke();
+    }
+}

@@ -1,0 +1,98 @@
+using _Game;
+using _Game.Sound;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+/// <summary>
+/// Nút unlock Landmark dạng 2D sprite + collider, giống LevelNode.
+/// Gắn lên child GameObject của Landmark.
+/// Chỉ hiện khi ở Build Mode và đúng zone đang deco.
+/// </summary>
+public class LandmarkButton : MonoBehaviour, IPointerClickHandler
+{
+    [SerializeField] private Zone zone;
+    [SerializeField] private int landmarkIndex;
+    [SerializeField] private TextMeshPro textStarCost;
+    [SerializeField] private GameObject viewEnoughStars;    // đủ stars
+    [SerializeField] private GameObject viewNotEnoughStars; // không đủ stars
+
+    private Canvas _tutorialCanvas;
+
+    private void Awake()
+    {
+        // Subscribe trong Awake thay vì OnEnable
+        // vì object sẽ bị SetActive(false) → OnDisable unsubscribe mất
+        LobbyEvents.OnEnterBuildMode += OnEnterBuildMode;
+        LobbyEvents.OnExitBuildMode += OnExitBuildMode;
+        LobbyEvents.OnLandmarkUnlocked += OnLandmarkUnlocked;
+        TutorialLobbyDecorActions.ShowDecorUI      += OnTutorialShowDecorUI;
+        TutorialLobbyDecorActions.CompleteTutorial += OnTutorialComplete;
+        gameObject.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        LobbyEvents.OnEnterBuildMode -= OnEnterBuildMode;
+        LobbyEvents.OnExitBuildMode -= OnExitBuildMode;
+        LobbyEvents.OnLandmarkUnlocked -= OnLandmarkUnlocked;
+        TutorialLobbyDecorActions.ShowDecorUI      -= OnTutorialShowDecorUI;
+        TutorialLobbyDecorActions.CompleteTutorial -= OnTutorialComplete;
+    }
+
+    private void OnTutorialShowDecorUI()
+    {
+        if (zone.ZoneId != 1 || landmarkIndex != 0) return;
+        _tutorialCanvas = gameObject.AddComponent<Canvas>();
+        _tutorialCanvas.overrideSorting = true;
+        _tutorialCanvas.sortingOrder = 11;
+    }
+
+    private void OnTutorialComplete()
+    {
+        if (_tutorialCanvas == null) return;
+        Destroy(_tutorialCanvas);
+        _tutorialCanvas = null;
+    }
+
+    private void OnLandmarkUnlocked(int unlockedZoneId, int unlockedIndex)
+    {
+        if (unlockedZoneId == zone.ZoneId && unlockedIndex == landmarkIndex)
+            gameObject.SetActive(false);
+    }
+
+    private void OnEnterBuildMode(int currentZoneId)
+    {
+        if (zone.IsUnlocked(landmarkIndex) || zone.ZoneId != currentZoneId)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
+        gameObject.SetActive(true);
+        textStarCost.text = zone.GetStarCost(landmarkIndex).ToString();
+        RefreshView();
+    }
+
+    private void OnExitBuildMode() => gameObject.SetActive(false);
+
+    /// <summary>Cập nhật visual dựa trên stars hiện tại có đủ để mua không</summary>
+    private void RefreshView()
+    {
+        bool canAfford = DataSave.ResourceData.stars >= zone.GetStarCost(landmarkIndex);
+        viewEnoughStars?.SetActive(canAfford);
+        viewNotEnoughStars?.SetActive(!canAfford);
+        if (textStarCost != null)
+            textStarCost.color = canAfford ? Color.white : Color.red;
+    }
+
+#if UNITY_EDITOR
+    public void EditorSetup(Zone z, int index) { zone = z; landmarkIndex = index; }
+#endif
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        SoundManager.Instance.PlayOneShot(SoundType.click);
+        LobbyEvents.OnLandmarkUnlockRequested?.Invoke(zone.ZoneId, landmarkIndex);
+    }
+}

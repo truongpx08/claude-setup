@@ -1,0 +1,63 @@
+using DG.Tweening;
+using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// Phase 4 — Fade-in panel đen rồi hiện bàn tay chỉ vào nút Decor.
+/// Ẩn khi player ấn nút (ShowDecorUI fired).
+/// </summary>
+public class TutorialLobbyDecorButtonHand : MonoBehaviour
+{
+    [SerializeField] private Image overlayPanel;
+    [SerializeField] private TutorialHandUI handUI;
+
+    private Transform _decorButton;
+    private Transform _decorButtonOriginalParent;
+    private int _decorButtonOriginalSiblingIndex;
+
+    private void OnEnable()
+    {
+        TutorialLobbyDecorActions.ShowDecorButtonHand += Show;
+        TutorialLobbyDecorActions.ShowDecorUI         += Hide;
+    }
+
+    private void OnDisable()
+    {
+        TutorialLobbyDecorActions.ShowDecorButtonHand -= Show;
+        TutorialLobbyDecorActions.ShowDecorUI         -= Hide;
+    }
+
+    // ----------------------------------------------------------
+    //  Handlers
+    // ----------------------------------------------------------
+
+    private void Show()
+    {
+        _decorButton = PanelLobby.Instance.ButtonDecorate.transform;
+        _decorButtonOriginalParent = _decorButton.parent;
+        _decorButtonOriginalSiblingIndex = _decorButton.GetSiblingIndex();
+
+        // Đưa nút lên trên cùng của canvas để render trên overlay
+        _decorButton.SetAsLastSibling();
+
+        overlayPanel.gameObject.SetActive(true);
+        overlayPanel.DOFade(0.8f, 0.4f).From(0f).OnComplete(() =>
+        {
+            handUI.Show(_decorButton.position);
+        });
+    }
+
+    private void Hide()
+    {
+        handUI.Hide();
+
+        // Restore vị trí ban đầu trong hierarchy
+        if (_decorButton != null)
+            _decorButton.SetSiblingIndex(_decorButtonOriginalSiblingIndex);
+
+        overlayPanel.DOFade(0f, 0.3f).OnComplete(() =>
+        {
+            overlayPanel.gameObject.SetActive(false);
+        });
+    }
+}

@@ -1,0 +1,110 @@
+using _Game;
+using DG.Tweening;
+using UnityEngine;
+
+/// <summary>
+/// Orchestrator của Tutorial Lobby Decor.
+/// Fire actions theo thứ tự → các subscriber (UI Decor, NPC, HUD…) tự xử lý visual.
+/// WorldMap.Start() gọi Begin() nếu IsActive().
+/// </summary>
+public class TutorialLobbyDecor : MonoBehaviour
+{
+    // ----------------------------------------------------------
+    //  State check
+    // ----------------------------------------------------------
+
+    public bool IsActive()
+    {
+        bool starsOk = DataSave.ResourceData.stars > 5;
+        bool notComplete = !DataSave.TutorialData.isLobbyDecorTutComplete;
+        Debug.Log($"[LobbyDecorTut] IsActive → stars={DataSave.ResourceData.stars} starsOk={starsOk} notComplete={notComplete}");
+        return starsOk && notComplete;
+    }
+
+    // ----------------------------------------------------------
+    //  Entry point — WorldMap gọi khi vào Lobby
+    // ----------------------------------------------------------
+
+    public void Begin()
+    {
+        Debug.Log("[LobbyDecorTut] Begin called");
+        if (!IsActive())
+        {
+            Debug.Log("[LobbyDecorTut] Begin → IsActive false, abort");
+            return;
+        }
+
+        Debug.Log("[LobbyDecorTut] Begin → scheduling ShowNPC in 1s");
+        DOVirtual.DelayedCall(1f, ShowNPC);
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 1 — NPC xuất hiện nói chuyện giới thiệu Decor
+    // ----------------------------------------------------------
+
+    public void ShowNPC()
+    {
+        int listenerCount = TutorialLobbyDecorActions.ShowNPC?.GetInvocationList().Length ?? 0;
+        Debug.Log($"[LobbyDecorTut] ShowNPC → listeners={listenerCount}");
+        TutorialLobbyDecorActions.ShowNPC?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 2 — Player ấn confirm → NPC biến mất
+    // ----------------------------------------------------------
+
+    public void HideNPC()
+    {
+        TutorialLobbyDecorActions.HideNPC?.Invoke();
+        DOVirtual.DelayedCall(0.5f, ShowDecorButton);
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 3 — Button Decor hiện ra trên HUD
+    // ----------------------------------------------------------
+
+    public void ShowDecorButton()
+    {
+        TutorialLobbyDecorActions.ShowDecorButton?.Invoke();
+        DOVirtual.DelayedCall(0.5f, ShowDecorButtonHand);
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 4 — Fade-in panel đen + bàn tay chỉ vào nút Decor
+    // ----------------------------------------------------------
+
+    public void ShowDecorButtonHand()
+    {
+        TutorialLobbyDecorActions.ShowDecorButtonHand?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 5 — Player ấn nút Decor → UI Decor mở, bàn tay chỉ Landmark đầu tiên
+    // ----------------------------------------------------------
+
+    public void ShowDecorUI()
+    {
+        TutorialLobbyDecorActions.ShowDecorUI?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 6 — Player bấm Landmark → anim hiển thị diễn hoạt
+    // ----------------------------------------------------------
+
+    public void PlayLandmarkAnim()
+    {
+        TutorialLobbyDecorActions.PlayLandmarkAnim?.Invoke();
+    }
+
+    // ----------------------------------------------------------
+    //  Phase 7 — Anim kết thúc → back về Lobby, hoàn thành tutorial
+    // ----------------------------------------------------------
+
+    public void CompleteTutorial()
+    {
+        if (!IsActive()) return;
+
+        DataSave.TutorialData.SetLobbyDecorTutComplete();
+        TutorialLobbyDecorActions.CompleteTutorial?.Invoke();
+    }
+}

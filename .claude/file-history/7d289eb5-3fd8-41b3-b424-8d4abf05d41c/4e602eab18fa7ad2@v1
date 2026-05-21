@@ -1,0 +1,129 @@
+using System;
+using _Base;
+using _Game;
+using UnityEngine;
+
+[Serializable]
+public class LandmarkData
+{
+    public GameObject[] lockedVisuals;    // Hiển thị khi chưa unlock
+    public GameObject[] unlockedVisuals; // Hiển thị sau khi unlock
+}
+
+/// <summary>
+/// Gắn lên Zone GameObject.
+/// Chứa data từng Landmark, hứng event và xử lý toàn bộ logic visual.
+/// </summary>
+public class Zone : MonoBehaviour
+{
+    [Header("Config")]
+    [SerializeField] private int zoneId;
+    [SerializeField] private Transform cameraAnchor;
+
+    [Header("Landmarks")]
+    [SerializeField] private LandmarkData[] landmarks;
+    [SerializeField] private Transform[] landmarkButtons;
+
+    public int ZoneId => zoneId;
+    public int LandmarkCount => landmarks.Length;
+    public Transform CameraAnchor => cameraAnchor;
+
+#if UNITY_EDITOR
+    public void EditorSetZoneId(int id) => zoneId = id;
+    public void EditorSetCameraAnchor(Transform anchor) => cameraAnchor = anchor;
+    public void EditorSetLandmarks(LandmarkData[] data) => landmarks = data;
+    public void EditorSetLandmarkButtons(Transform[] buttons) => landmarkButtons = buttons;
+#endif
+    private void Start() => RefreshAll();
+
+    private void OnEnable()
+    {
+        LobbyEvents.OnLandmarkUnlockRequested += OnLandmarkUnlockRequested;
+        LobbyEvents.OnLandmarkUnlocked += OnLandmarkUnlocked;
+    }
+
+    private void OnDisable()
+    {
+        LobbyEvents.OnLandmarkUnlockRequested -= OnLandmarkUnlockRequested;
+        LobbyEvents.OnLandmarkUnlocked -= OnLandmarkUnlocked;
+    }
+    // ── Events ────────────────────────────────────────────────────────────────
+
+    private void OnLandmarkUnlockRequested(int requestedZoneId, int index)
+    {
+        if (requestedZoneId != zoneId) return;
+        TryUnlock(index);
+    }
+
+    private void OnLandmarkUnlocked(int unlockedZoneId, int _)
+    {
+        if (unlockedZoneId != zoneId) return;
+        RefreshAll();
+    }
+
+    // ── Queries ──────────────────────────────────────────────────────────────
+
+    public bool IsUnlocked(int index) =>
+        DataSave.LandmarkSaveData.IsUnlocked(zoneId, index);
+
+    public int GetStarCost(int index)
+    {
+        var zone = GameConfig.Instance.lobbyConfig.GetZoneById(zoneId);
+        return (zone != null && index < zone.landmarks.Count) ? zone.landmarks[index].starCost : 0;
+    }
+
+    // ── Visuals ───────────────────────────────────────────────────────────────
+
+    public void RefreshAll()
+    {
+        for (int i = 0; i < landmarks.Length; i++)
+            Refresh(i);
+    }
+    public void Refresh(int index)
+    {
+        if (index < 0 || index >= landmarks.Length) return;
+        bool unlocked = IsUnlocked(index);
+        var data = landmarks[index];
+        foreach (var go in data.lockedVisuals) go?.SetActive(!unlocked);
+        foreach (var go in data.unlockedVisuals) go?.SetActive(unlocked);
+    }
+    // ── Unlock ───────────────────────────────────────────────────────────────
+
+    /// <summary>Unlock landmark: trừ sao, lưu data, refresh visual.</summary>
+    public void TryUnlock(int index)
+    {
+        if (IsUnlocked(index)) return;
+
+        int cost = GetStarCost(index);
+        if (DataSave.ResourceData.stars < cost)
+        {
+            Debug.LogWarning($"[Zone] Không đủ sao! Cần {cost}, hiện có {DataSave.ResourceData.stars}");
+            _ = UIManager.Instance.Popup.ShowPopup<PopupNotEnoughStars>();
+            return;
+        }
+
+        DataSave.ResourceData.ChangeResourceValue(ResourcesType.stars, -cost);
+        DataSave.LandmarkSaveData.Unlock(zoneId, index);
+        DataSave.SaveLandmarkData();
+
+        Refresh(index);
+        LobbyEvents.OnLandmarkUnlocked?.Invoke(zoneId, index);
+        MoveCameraToLandmark(index);
+        CheckZoneCompleted();
+    }
+
+    private void MoveCameraToLandmark(int index)
+    {
+        if (landmarkButtons == null || index >= landmarkButtons.Length) return;
+        Transform btn = landmarkButtons[index];
+        if (btn != null) LobbyEvents.OnMoveCamera?.Invoke(btn.position, false);
+    }
+
+    private void CheckZoneCompleted()
+    {
+        var zone = GameConfig.Instance.lobbyConfig.GetZoneById(zoneId);
+        if (zone == null) return;
+        if (DataSave.LandmarkSaveData.IsZoneCompleted(zoneId, zone.landmarks.Count))
+            LobbyEvents.OnZoneCompleted?.Invoke(zoneId);
+    }
+}

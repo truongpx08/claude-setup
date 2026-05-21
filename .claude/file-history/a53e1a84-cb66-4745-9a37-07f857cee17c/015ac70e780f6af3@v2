@@ -1,0 +1,59 @@
+---
+name: designing-map-system
+description: Designs and implements the Map System for the NeverGiveUp 3D Unity farming game. Covers WorldSystem (GameCtrl scope), TileGrid (N×M 3D XZ grid), MapConfig ScriptableObject, additive scene transitions, and save/load player position across maps. Use when implementing world navigation, map loading between farm and town, tile grid for placing crops or buildings, or restoring player position on game load. Do NOT use for individual crop, animal, or NPC system design.
+---
+
+# Map System — NeverGiveUp
+
+## 4 thành phần cốt lõi
+
+| Thành phần | Nằm ở | Vai trò |
+|---|---|---|
+| `WorldSystem` | GameCtrl | Biết player đang ở map nào, điều phối transition |
+| `MapConfig` | ScriptableObject | Định nghĩa map: id, scene name, entry points |
+| `TileGrid` | SceneCtrl | Lưới N×M ô 3D trên mặt phẳng XZ của từng map |
+| `MapTransitionTrigger` | Scene prefab | Kích hoạt chuyển map khi player bước vào |
+
+## Scope trong architecture
+
+```
+GameCtrl (DontDestroyOnLoad)
+  ├─ WorldSystem       ← duy nhất biết currentMap, xử lý transition + save vị trí
+  ├─ TimeSystem
+  ├─ InventorySystem
+  └─ SaveSystem
+
+FarmSceneCtrl
+  └─ TileGrid          ← lưới ô của farm (soil, water, path...)
+
+TownSceneCtrl
+  └─ TileGrid          ← lưới ô của town (road, building footprint...)
+```
+
+## Flow tổng quát
+
+**Chuyển map:**
+```
+Player bước vào trigger
+  → WorldSystem.TransitionTo(mapId, entryId)
+  → Fade out → LoadScene(Additive) + UnloadScene cũ → đặt player → Fade in
+```
+
+**Mở game lại:**
+```
+Boot → SaveSystem.Load() → WorldSystem biết mapId + position
+  → Load đúng scene → đặt player tại vị trí đã lưu (không qua EntryPoint)
+```
+
+## Nguyên tắc thiết kế
+
+- **WorldSystem** ở GameCtrl — sống suốt game, không bao giờ mất state
+- **Additive loading** — GameCtrl scene luôn tồn tại, chỉ swap map scene
+- **EntryPoint** — mỗi map có nhiều điểm vào (từ farm, từ forest...), tránh hard-code vị trí
+- **TileGrid per scene** — mỗi map có lưới riêng, không chia sẻ
+
+## Chi tiết từng phần
+
+- **WorldSystem + MapConfig**: xem [references/world-system.md](references/world-system.md)
+- **TileGrid (3D grid, coord conversion)**: xem [references/tile-grid.md](references/tile-grid.md)
+- **Transitions + Save/Load**: xem [references/transitions-and-save.md](references/transitions-and-save.md)

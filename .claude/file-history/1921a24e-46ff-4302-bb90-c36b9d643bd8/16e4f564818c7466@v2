@@ -1,0 +1,20 @@
+using Pixelplacement;
+using UnityEngine;
+
+/// <summary>
+/// Entry point cho toàn bộ tutorial system.
+/// Giữ refs tới TutorialLv1 và TutorialBooster; callers đọc state qua TutorialCtrl.Instance.
+/// </summary>
+public class TutorialCtrl : Singleton<TutorialCtrl>
+{
+    [SerializeField] private TutorialLv1 lv1;
+    public TutorialLv1 Lv1 => lv1;
+    [SerializeField] private TutorialLv1End lv1End;
+    public TutorialLv1End Lv1End => lv1End;
+    [SerializeField] private TutorialLv2Start lv2Start;
+    public TutorialLv2Start Lv2Start => lv2Start;
+    [SerializeField] private TutorialBooster booster;
+    public TutorialBooster Booster => booster;
+    [SerializeField] private TutorialLobbyDecor lobbyDecor;
+    public TutorialLobbyDecor LobbyDecor => lobbyDecor;
+}

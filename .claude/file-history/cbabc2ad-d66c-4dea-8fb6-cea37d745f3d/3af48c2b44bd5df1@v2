@@ -1,0 +1,68 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(del \"c:\\\\Users\\\\ADMIN\\\\Documents\\\\Projects\\\\Personal\\\\p1_jump\\\\Packages\\\\packages-lock.json\")",
+      "Read(//c/Users/ADMIN/.claude/**)",
+      "Read(//c/Users/ADMIN/**)",
+      "Bash(cat ~/.claude/plugins/*.json)",
+      "Bash(npx gitnexus:*)",
+      "mcp__gitnexus__list_repos",
+      "mcp__gitnexus__context",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "mcp__gitnexus__rename",
+      "mcp__gitnexus__impact",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ADMIN\\\\Documents\\\\Projects\\\\NeverGiveUp\" -Force)",
+      "Bash(Select-Object Name, Mode, LastWriteTime)",
+      "Bash(Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\ADMIN\\\\Documents\\\\Projects\\\\NeverGiveUp\\\\Assets\" -Recurse -Directory | Where-Object { $_.Name -match \"^[^_]\" -and $_.Name -notin @\\(\"Scenes\", \"Settings\", \"TutorialInfo\"\\) } | Select-Object -ExpandProperty FullName)",
+      "Bash(git -C \"c:\\\\Users\\\\ADMIN\\\\Documents\\\\Projects\\\\NeverGiveUp\" status)",
+      "Bash(git -C 'c:\\\\Users\\\\ADMIN\\\\Documents\\\\Projects\\\\NeverGiveUp' commit -m ' *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\ADMIN\\.claude"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Grep|Glob|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/ADMIN/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
+            "timeout": 10,
+            "statusMessage": "Enriching with GitNexus graph context..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/ADMIN/.claude/hooks/gitnexus/gitnexus-hook.cjs\"",
+            "timeout": 10,
+            "statusMessage": "Checking GitNexus index freshness..."
+          },
+          {
+            "type": "command",
+            "command": "npx gitnexus analyze --embeddings 2>/dev/null || true",
+            "if": "Bash(git commit*)",
+            "timeout": 120,
+            "statusMessage": "Updating GitNexus index...",
+            "async": true
+          }
+        ]
+      }
+    ],
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash /Users/nguyenlanhanh/.claude/statusline.sh"
+  },
+  "autoUpdatesChannel": "latest"
+}

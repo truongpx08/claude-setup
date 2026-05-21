@@ -1,0 +1,31 @@
+3 hệ thống này đều có chung cấu trúc:
+
+Đặt xuống → Chăm sóc → Thu hoạch
+
+Sự khác nhau nằm ở cách chăm sóc và sản phẩm đầu ra.
+
+Gợi ý
+Trồng cây
+
+Chăm sóc: tưới nước mỗi ngày, bón phân tăng tốc
+Đầu ra: thu hoạch 1 lần rồi trồng lại (lúa, ngô) hoặc nhiều lần (cà chua)
+Rủi ro: héo nếu không tưới, sâu bệnh
+Nuôi cá
+
+Chăm sóc: cho ăn, giữ sạch ao
+Đầu ra: thu hoạch khi đủ lớn (bán cá)
+Rủi ro: cá chết nếu ao bẩn hoặc không cho ăn
+Đặc thù: nuôi nhiều con trong 1 ao — khác cây (1 ô 1 cây)
+Nuôi con vật
+
+Chăm sóc: cho ăn, dọn chuồng, vuốt ve
+Đầu ra: sản phẩm hàng ngày (trứng gà, sữa bò) — không cần giết
+Rủi ro: hạnh phúc thấp → sản lượng giảm
+Đặc thù: con vật di chuyển tự do, có cảm xúc
+Điểm mấu chốt để hỏi bạn
+Câu hỏi    Ảnh hưởng thiết kế
+Có mùa vụ không? (xuân trồng lúa, thu trồng bí)    Season system
+Cá nuôi trong ao riêng hay dùng chung grid với cây?    FarmTileSystem
+Con vật thả tự do hay nhốt chuồng?    Navigation / AI
+Có chế biến không? (cá → cá khô, sữa → phô mai)    Processing system
+Trả lời mấy câu này rồi mình làm rõ docs cho từng hệ thống.bạn tiếp tục câu trả lời được không

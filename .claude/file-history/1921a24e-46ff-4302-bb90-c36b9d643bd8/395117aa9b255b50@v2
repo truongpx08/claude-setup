@@ -1,0 +1,5 @@
+public interface ITutorial
+{
+    bool IsActive();
+    void Begin();
+}

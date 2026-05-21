@@ -1,0 +1,5 @@
+# Memory Index
+
+- [Project Overview](project_nevergiveup.md) — Unity game project NeverGiveUp, dùng custom framework (_Base), chưa có _Game/ folder
+- [Farming Architecture](project_farming_architecture.md) — Kiến trúc tổng thể farming game: 4 tầng, data-driven, patterns, hệ thống
+- [feedback_writing_skills.md](feedback_writing_skills.md) — Luôn invoke skill `writing-skills` trước khi viết bất kỳ SKILL.md nào

@@ -1,0 +1,117 @@
+using _Game;
+using _Game.Sound;
+using Lofelt.NiceVibrations;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// Gắn lên GameObject của button Decorate.
+/// Tự xử lý click và refresh tiến trình landmark.
+/// </summary>
+public class ButtonDecorate : MonoBehaviour
+{
+    [SerializeField] private Button button;
+    [SerializeField] private TextMeshProUGUI textZoneName;
+    [SerializeField] private TextMeshProUGUI textProgress; // "2/3"
+    [SerializeField] private Image imageProgress;          // fill amount
+    [SerializeField] private Canvas canvas;
+
+    private void Awake()
+    {
+        button.onClick.AddListener(OnClick);
+    }
+
+    /// <summary>
+    /// Refresh khi button được bật lại (SetActive true).
+    /// Không cần lắng nghe event landmark/zone vì button đang ẩn trong Build Mode —
+    /// dữ liệu luôn mới nhất khi hiện ra lại.
+    /// </summary>
+    private void OnEnable()
+    {
+        Refresh();
+        TutorialLobbyDecorActions.ShowDecorButtonHand += OnTutorialShow;
+        TutorialLobbyDecorActions.ShowDecorUI         += OnTutorialHide;
+    }
+
+    private void OnDisable()
+    {
+        TutorialLobbyDecorActions.ShowDecorButtonHand -= OnTutorialShow;
+        TutorialLobbyDecorActions.ShowDecorUI         -= OnTutorialHide;
+    }
+
+    private void OnTutorialShow() => canvas.sortingOrder = 11;
+    private void OnTutorialHide() => canvas.sortingOrder = 0;
+
+    private void OnDestroy()
+    {
+        button.onClick.RemoveAllListeners();
+    }
+
+    private void OnClick()
+    {
+        SoundManager.Instance.PlayOneShot(SoundType.click);
+        if (!DataSave.PlayerSettings.VibrationOff)
+        {
+            if (GameConfig.Instance.dataConfigGamePlay.hapticConfig.TryGetValue(HapticType.DecorateMode, out var preset))
+            {
+                HapticPatterns.PlayPreset(preset);
+            }
+        }
+
+        var lobbyDecor = TutorialCtrl.Instance.LobbyDecor;
+        if (lobbyDecor.IsActive())
+            lobbyDecor.ShowDecorUI();
+
+        LobbyEvents.OnRequestEnterBuildMode?.Invoke();
+    }
+
+    /// <summary>Cập nhật tên zone và tiến trình landmark của zone đang cần decorate</summary>
+    public void Refresh()
+    {
+        var data = DataSave.LandmarkSaveData;
+        var zones = GameConfig.Instance.lobbyConfig.listZone;
+
+        // Tìm zone chưa hoàn thành đầu tiên
+        ZoneData currentZone = null;
+        foreach (var zone in zones)
+        {
+            if (!data.IsZoneCompleted(zone.zoneId, zone.landmarks.Count))
+            {
+                currentZone = zone;
+                break;
+            }
+        }
+
+        if (currentZone == null)
+        {
+            var lastZone = zones.Count > 0 ? zones[^1] : null;
+            if (textZoneName != null)
+                textZoneName.text = lastZone?.nameZone ?? string.Empty;
+            int total = lastZone?.landmarks.Count ?? 0;
+            SetProgress(total, total);
+            return;
+        }
+
+        int unlocked = 0;
+        var state = data.zones.Find(z => z.zoneId == currentZone.zoneId);
+        if (state != null)
+        {
+            for (int i = 0; i < currentZone.landmarks.Count; i++)
+                if (i < state.unlocked.Count && state.unlocked[i]) unlocked++;
+        }
+
+        if (textZoneName != null)
+            textZoneName.text = currentZone.nameZone;
+
+        SetProgress(unlocked, currentZone.landmarks.Count);
+    }
+
+    private void SetProgress(int current, int total)
+    {
+        if (textProgress != null)
+            textProgress.text = $"{current}/{total}";
+        if (imageProgress != null)
+            imageProgress.fillAmount = total > 0 ? (float)current / total : 0f;
+    }
+}

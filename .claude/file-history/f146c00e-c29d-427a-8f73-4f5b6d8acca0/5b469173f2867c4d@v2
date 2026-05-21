@@ -1,0 +1,16 @@
+---
+name: reference-claude-config-dir
+description: "Thư mục gốc cấu hình Claude Code — nơi chứa CLAUDE.md, settings.json, skills, hooks"
+metadata: 
+  node_type: memory
+  type: reference
+  originSessionId: f146c00e-c29d-427a-8f73-4f5b6d8acca0
+---
+
+Thư mục cấu hình global của Claude Code: `C:\Users\ADMIN\.claude`
+
+Các file quan trọng:
+- `C:\Users\ADMIN\.claude\CLAUDE.md` — global instructions cho mọi project
+- `C:\Users\ADMIN\.claude\settings.json` — global permissions, hooks, statusLine
+- `C:\Users\ADMIN\.claude\skills\` — custom skills
+- `C:\Users\ADMIN\.claude\hooks\` — hook scripts (bao gồm GitNexus hook)

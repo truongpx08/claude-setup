@@ -1,0 +1,170 @@
+# NeverGiveUp — Game Design & Architecture
+
+## Thể loại
+Farming game — data-driven. Thêm nội dung mới chỉ cần tạo ScriptableObject asset, không code thêm.
+
+---
+
+## Nguyên tắc cốt lõi
+
+Mọi đối tượng trong game tách làm 4 tầng:
+
+```
+Config (ScriptableObject)     — đối tượng này là gì (bất biến, set trong Editor)
+           ↓
+StateMachine / Logic          — đang làm gì, hành vi
+           ↓
+Runtime Data                  — đang như thế nào (thay đổi trong game)
+           ↓
+View                          — phản ánh ra màn hình (sprite, animation, UI)
+
+Save Data (subset of Runtime) — cần nhớ khi tắt game
+```
+
+View lắng nghe qua:
+- **Value\<T\>** — giá trị thay đổi liên tục (tiền, máu, relationship)
+- **EventBus** — sự kiện xảy ra 1 lần (cây chín, NPC nói chuyện)
+
+---
+
+## Các hệ thống
+
+### Cây trồng
+- **Config:** cropName, growthTime, stageSprites, yield, sellPrice
+- **StateMachine:** Planted → Growing → Ripe / Wilted
+- **View:** đổi sprite theo state
+- **Mở rộng:** tạo `Rice.asset`, `Corn.asset` → điền số → xong
+
+### Con vật
+- **Config:** animalName, speed, IMoveBehavior (Strategy)
+- **StateMachine:** Idle → Walking → Eating → Sleeping
+- **Strategy (IMoveBehavior):**
+  - `WalkBehavior` — bò
+  - `HopBehavior` — gà
+  - `WaddleBehavior` — vịt
+- **View:** play animation theo state
+- **Mở rộng:** tạo `Cow.asset`, gán `WalkBehavior` → xong. Hành vi mới → 1 class mới
+
+### NPC
+- **Config:** npcName, portrait, dialogues, List\<ScheduleEntry\>
+  ```
+  ScheduleEntry: time → location → action
+  Ví dụ: 8:00 → Farm → Working
+         20:00 → Home → Sleeping
+  ```
+- **StateMachine:** Idle → Walking → Working → Talking → Sleeping
+- **Runtime:** vị trí hiện tại, state hiện tại
+- **Save:** relationship level, story flags (đã gặp chưa, đã cho đồ chưa)
+- **View:** dialogue bubble, animation
+- **Mở rộng:** tạo `Elder.asset`, điền schedule + dialogue → xong
+
+### Story System (narrative tuyến tính, bắt buộc)
+Game dẫn dắt người chơi theo thứ tự — không phải quest tự do.
+
+- **StoryData:** List\<StoryStep\>
+- **StoryStep (abstract ScriptableObject):**
+  - `DialogueStep` — NPC nói, chờ player click Continue
+  - `GiveItemStep` — cho player item
+  - `WaitForActionStep` — chờ EventBus event (chặt cây, đến địa điểm...)
+  - `FadeScreenStep` — fade in/out
+- **StoryPlayer:**
+  ```csharp
+  async UniTask Play(StoryData story) {
+      foreach (var step in story.steps)
+          await step.Execute(ctx);
+  }
+  ```
+- **Mở rộng:** tạo `TutorialStory.asset`, kéo thả steps → xong. Step type mới → 1 class mới
+
+### Quest System (nhiệm vụ tự do)
+Khác Story — player tự làm theo tiến độ của mình.
+
+- **QuestData:** List\<QuestStepData\>
+- **QuestStepData:** eventToListen, matchValue, requiredCount
+- **QuestSystem** lắng nghe EventBus, đủ count → complete step → advance
+- **Mở rộng:** tạo asset, điền event cần lắng nghe → xong (miễn là hệ thống đó đã emit event)
+
+---
+
+## Scope GameCtrl vs SceneCtrl
+
+```
+GameCtrl (DontDestroyOnLoad)
+  ├─ TimeSystem        — giờ game, ngày tháng
+  ├─ InventorySystem   — đồ của player
+  ├─ SaveSystem        — đọc/ghi save data
+  ├─ StorySystem       — chạy story tuần tự
+  └─ QuestSystem       — lắng nghe EventBus, track progress
+
+SceneCtrl (per scene)
+  ├─ FarmTileSystem    — quản lý grid đất
+  ├─ CropSystem        — quản lý cây trồng
+  ├─ AnimalSystem      — quản lý con vật
+  └─ NPCSystem         — quản lý NPC + schedule
+```
+
+---
+
+## Giao tiếp qua EventBus
+
+Các hệ thống không biết nhau — chỉ emit/listen event.
+
+```
+CropSystem   → emit OnCropHarvested
+AnimalSystem → emit OnAnimalFed
+NPCSystem    → emit OnNPCTalked
+TreeSystem   → emit OnTreeChopped
+                    ↓
+QuestSystem  lắng nghe → cập nhật progress
+StorySystem  lắng nghe → advance WaitForActionStep
+```
+
+---
+
+## Pattern map
+
+| Vấn đề | Pattern |
+|---|---|
+| Thêm loại mới không code | ScriptableObject + Data-driven |
+| Đối tượng có nhiều trạng thái | StateMachine |
+| Hành vi khác nhau về chất | Strategy |
+| Các hệ thống giao tiếp | EventBus |
+| Giá trị bind xuống UI | Value\<T\> |
+| Class cần dùng class khác | DI (VContainer) |
+
+---
+
+## Folder Structure (dự kiến)
+
+```
+_Game/Scripts/
+├── Installers/
+│   ├── GameCtrl.cs
+│   └── FarmSceneCtrl.cs
+├── Config/
+│   ├── CropData.cs
+│   ├── AnimalData.cs
+│   ├── NPCData.cs
+│   ├── StoryData.cs
+│   └── QuestData.cs
+├── Systems/
+│   ├── TimeSystem.cs
+│   ├── InventorySystem.cs
+│   ├── CropSystem.cs
+│   ├── AnimalSystem.cs
+│   ├── NPCSystem.cs
+│   ├── StorySystem.cs
+│   └── QuestSystem.cs
+├── States/
+│   ├── Crop/
+│   ├── Animal/
+│   └── NPC/
+├── Strategy/
+│   └── MoveBehavior/
+├── Story/
+│   └── Steps/
+└── Views/
+    ├── CropView.cs
+    ├── AnimalView.cs
+    └── NPCView.cs
+```

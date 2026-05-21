@@ -1,0 +1,26 @@
+using UnityEngine;
+
+/// <summary>
+/// Tấm UI transparent full-screen chặn click trong Tutorial Lobby Decor.
+/// Bật khi ShowNPC, tắt khi ShowDecorButton (player được phép bấm nút Decor).
+/// Đặt Canvas Sort Order cao hơn toàn bộ Lobby UI.
+/// </summary>
+public class TutorialLobbyDecorBlocker : MonoBehaviour
+{
+    [SerializeField] private GameObject blockerPanel;
+
+    private void OnEnable()
+    {
+        TutorialLobbyDecorActions.ShowNPC          += Show;
+        TutorialLobbyDecorActions.CompleteTutorial += Hide;
+    }
+
+    private void OnDisable()
+    {
+        TutorialLobbyDecorActions.ShowNPC          -= Show;
+        TutorialLobbyDecorActions.CompleteTutorial -= Hide;
+    }
+
+    private void Show() => blockerPanel.SetActive(true);
+    private void Hide() => blockerPanel.SetActive(false);
+}

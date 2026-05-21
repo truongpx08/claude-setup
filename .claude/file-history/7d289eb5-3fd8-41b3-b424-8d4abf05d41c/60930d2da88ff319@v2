@@ -1,0 +1,29 @@
+using System;
+
+/// <summary>
+/// Actions của Tutorial Lobby Decor.
+/// Orchestrator fires → các subscriber (UI, NPC, Camera…) tự xử lý visual.
+/// </summary>
+public static class TutorialLobbyDecorActions
+{
+    /// <summary>Vào Lobby → NPC xuất hiện nói chuyện giới thiệu tính năng Decor</summary>
+    public static Action ShowNPC;
+
+    /// <summary>Player ấn confirm thoại → NPC biến mất</summary>
+    public static Action HideNPC;
+
+    /// <summary>NPC biến mất → Button Decor hiện ra trên HUD</summary>
+    public static Action ShowDecorButton;
+
+    /// <summary>Button Decor hiện → fade-in panel đen + bàn tay chỉ vào nút Decor</summary>
+    public static Action ShowDecorButtonHand;
+
+    /// <summary>Player ấn nút Decor → UI Decor mở ra, bàn tay chỉ vào Landmark đầu tiên</summary>
+    public static Action ShowDecorUI;
+
+    /// <summary>Player bấm vào Landmark đầu tiên → anim hiển thị Landmark diễn hoạt</summary>
+    public static Action PlayLandmarkAnim;
+
+    /// <summary>Anim kết thúc → back về Lobby thường, hoàn thành tutorial</summary>
+    public static Action CompleteTutorial;
+}

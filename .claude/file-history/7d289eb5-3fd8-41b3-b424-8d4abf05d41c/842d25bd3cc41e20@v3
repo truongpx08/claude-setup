@@ -1,0 +1,41 @@
+using UnityEngine;
+
+/// <summary>
+/// Hiện bàn tay chỉ vào Landmark đầu tiên khi UI Decor mở ra.
+/// Ẩn khi player bấm vào Landmark (PlayLandmarkAnim fired).
+/// </summary>
+public class TutorialLobbyDecorLandmarkHand : MonoBehaviour
+{
+    [SerializeField] private TutorialHand tutorialHand;
+
+    private void OnEnable()
+    {
+        TutorialLobbyDecorActions.ShowDecorUI      += Show;
+        TutorialLobbyDecorActions.PlayLandmarkAnim += Hide;
+    }
+
+    private void OnDisable()
+    {
+        TutorialLobbyDecorActions.ShowDecorUI      -= Show;
+        TutorialLobbyDecorActions.PlayLandmarkAnim -= Hide;
+    }
+
+    private void Show()
+    {
+        var target = FindFirstLandmark();
+        if (target == null) return;
+        tutorialHand.Show(target);
+    }
+
+    private void Hide() => tutorialHand.Hide();
+
+    private static Transform FindFirstLandmark()
+    {
+        foreach (var zone in Object.FindObjectsByType<Zone>(FindObjectsSortMode.None))
+        {
+            if (zone.ZoneId == 1)
+                return zone.GetLandmarkButtonTransform(0);
+        }
+        return null;
+    }
+}

@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "command": "npx gitnexus analyze --embeddings 2>/dev/null || true",
+            "timeout": 300,
+            "statusMessage": "Updating GitNexus index with embeddings...",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

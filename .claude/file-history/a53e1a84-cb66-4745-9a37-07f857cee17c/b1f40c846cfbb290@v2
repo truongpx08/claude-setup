@@ -1,0 +1,133 @@
+# WorldSystem + MapConfig
+
+## Contents
+- MapConfig ScriptableObject
+- EntryPoint struct
+- WorldSystem class
+- Đăng ký với VContainer
+
+---
+
+## MapConfig (ScriptableObject)
+
+Mỗi map = 1 asset. Thêm map mới không cần code.
+
+```csharp
+[CreateAssetMenu(menuName = "NeverGiveUp/MapConfig")]
+public class MapConfig : ScriptableObject
+{
+    public string mapId;          // "farm", "town", "forest"
+    public string sceneName;      // tên scene Unity (phải khớp Build Settings)
+    public EntryPoint[] entryPoints;
+}
+
+[Serializable]
+public struct EntryPoint
+{
+    public string entryId;        // "from_town", "from_farm", "from_forest"
+    public Vector3 position;
+    public float rotationY;
+}
+```
+
+Tìm EntryPoint:
+```csharp
+bool TryGetEntry(MapConfig map, string entryId, out EntryPoint result)
+{
+    foreach (var e in map.entryPoints)
+    {
+        if (e.entryId == entryId) { result = e; return true; }
+    }
+    result = default;
+    return false;
+}
+```
+
+---
+
+## WorldSystem
+
+Đăng ký ở **GameCtrl**, sống suốt game.
+
+```csharp
+public class WorldSystem
+{
+    readonly MapConfig[] _allMaps;     // inject qua DI — tất cả MapConfig assets
+    readonly SaveSystem _saveSystem;
+    readonly SceneLoader _sceneLoader; // wrapper UniTask cho LoadScene
+
+    MapConfig _currentMap;
+    bool _isTransitioning;
+
+    public string CurrentMapId => _currentMap.mapId;
+
+    // Gọi khi mở game: load map từ save data
+    public async UniTask LoadSavedMap(WorldSaveData data)
+    {
+        _currentMap = FindMap(data.currentMapId);
+        await _sceneLoader.LoadAdditive(_currentMap.sceneName);
+        // đặt player tại vị trí đã lưu — SceneCtrl lắng nghe event
+        GameBus.Send(new OnMapLoaded
+        {
+            useEntryPoint = false,
+            savedPosition  = data.playerPosition,
+            savedRotationY = data.playerRotationY
+        });
+    }
+
+    // Gọi từ MapTransitionTrigger
+    public async UniTask TransitionTo(string mapId, string entryId)
+    {
+        if (_isTransitioning) return;
+        _isTransitioning = true;
+
+        GameBus.Send(new OnMapTransitionStarted());   // → FadeSystem fade out
+
+        var nextMap = FindMap(mapId);
+        await _sceneLoader.UnloadScene(_currentMap.sceneName);
+        await _sceneLoader.LoadAdditive(nextMap.sceneName);
+
+        _currentMap = nextMap;
+        _saveSystem.SaveWorldState(CurrentMapId, GetPlayerPosition());
+
+        GameBus.Send(new OnMapLoaded
+        {
+            useEntryPoint = true,
+            entryId       = entryId
+        });
+
+        _isTransitioning = false;
+    }
+
+    MapConfig FindMap(string id) =>
+        System.Array.Find(_allMaps, m => m.mapId == id);
+}
+```
+
+---
+
+## Messages
+
+```csharp
+public struct OnMapTransitionStarted { }
+
+public struct OnMapLoaded
+{
+    public bool useEntryPoint;
+    // useEntryPoint = true  → SceneCtrl dùng entryId để đặt player
+    // useEntryPoint = false → SceneCtrl dùng savedPosition
+    public string entryId;
+    public Vector3 savedPosition;
+    public float savedRotationY;
+}
+```
+
+---
+
+## Đăng ký VContainer (GameCtrl)
+
+```csharp
+// trong GameCtrl.ConfigureDependencies()
+builder.Register<WorldSystem>(Lifetime.Singleton);
+builder.RegisterInstance(allMapConfigs);  // MapConfig[] từ Inspector
+```

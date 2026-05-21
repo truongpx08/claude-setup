@@ -1,0 +1,156 @@
+# TileGrid — 3D Grid System
+
+## Contents
+- Khái niệm và tọa độ
+- TileType và TileInstance
+- TileGrid class
+- World ↔ Grid conversion
+- Đăng ký VContainer
+
+---
+
+## Khái niệm
+
+3D game dùng mặt phẳng **XZ** làm sàn (Y là lên). Grid là lưới ô vuông trên mặt phẳng đó.
+
+```
+  Z
+  ↑   (0,2) (1,2) (2,2)
+  |   (0,1) (1,1) (2,1)
+  |   (0,0) (1,0) (2,0)
+  └──────────────────→ X
+```
+
+Mỗi ô = 1 `TileInstance` tại tọa độ `(x, z)`.
+
+---
+
+## TileType
+
+```csharp
+public enum TileType
+{
+    None,
+    Soil,       // có thể trồng cây
+    Water,      // ao cá
+    Path,       // đường đi
+    Building,   // móng nhà / chuồng
+}
+```
+
+---
+
+## TileInstance
+
+```csharp
+public class TileInstance
+{
+    public Vector2Int coord;
+    public TileType type;
+    public bool isWalkable;
+    public bool isUnlocked;       // có thể mua mở thêm đất
+    public GameObject occupant;   // object đang chiếm ô (cây, máy chế biến...)
+}
+```
+
+`occupant != null` → ô đang bị chiếm, không đặt thêm được.
+
+---
+
+## TileGrid
+
+```csharp
+public class TileGrid
+{
+    public int Width { get; }
+    public int Height { get; }
+
+    readonly float _tileSize;        // thường 1f (1 Unity unit = 1 tile)
+    readonly Vector3 _origin;        // vị trí world của ô (0,0)
+    readonly TileInstance[,] _tiles;
+
+    public TileGrid(int width, int height, float tileSize, Vector3 origin)
+    {
+        Width     = width;
+        Height    = height;
+        _tileSize = tileSize;
+        _origin   = origin;
+        _tiles    = new TileInstance[width, height];
+
+        for (int x = 0; x < width; x++)
+        for (int z = 0; z < height; z++)
+        {
+            _tiles[x, z] = new TileInstance
+            {
+                coord      = new Vector2Int(x, z),
+                type       = TileType.None,
+                isWalkable = true,
+                isUnlocked = false,
+            };
+        }
+    }
+
+    public TileInstance Get(int x, int z) => _tiles[x, z];
+    public TileInstance Get(Vector2Int coord) => _tiles[coord.x, coord.y];
+
+    public bool IsValid(int x, int z) =>
+        x >= 0 && x < Width && z >= 0 && z < Height;
+}
+```
+
+---
+
+## World ↔ Grid Conversion
+
+```csharp
+// World position → Grid coord
+public Vector2Int WorldToGrid(Vector3 worldPos)
+{
+    var local = worldPos - _origin;
+    int x = Mathf.FloorToInt(local.x / _tileSize);
+    int z = Mathf.FloorToInt(local.z / _tileSize);
+    return new Vector2Int(x, z);
+}
+
+// Grid coord → World position (tâm ô)
+public Vector3 GridToWorld(Vector2Int coord)
+{
+    return _origin + new Vector3(
+        coord.x * _tileSize + _tileSize * 0.5f,
+        0f,
+        coord.y * _tileSize + _tileSize * 0.5f
+    );
+}
+```
+
+---
+
+## Đặt và xóa vật thể trên ô
+
+```csharp
+public bool TryPlace(Vector2Int coord, GameObject obj)
+{
+    var tile = Get(coord);
+    if (!tile.isUnlocked || tile.occupant != null) return false;
+    tile.occupant = obj;
+    return true;
+}
+
+public void ClearOccupant(Vector2Int coord)
+{
+    Get(coord).occupant = null;
+}
+```
+
+---
+
+## Đăng ký VContainer (SceneCtrl)
+
+```csharp
+// trong FarmSceneCtrl.ConfigureDependencies()
+// Tạo grid từ config lấy trong Inspector
+builder.RegisterInstance(new TileGrid(width, height, tileSize, gridOrigin))
+       .AsSelf();
+```
+
+Các system trong scene (CropSystem, BuildingSystem...) inject `TileGrid` để đọc/ghi ô.

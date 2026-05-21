@@ -1,0 +1,48 @@
+using DG.Tweening;
+using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// Phase 4 — Fade-in panel đen rồi hiện bàn tay chỉ vào nút Decor.
+/// Ẩn khi player ấn nút (ShowDecorUI fired).
+/// </summary>
+public class TutorialLobbyDecorButtonHand : MonoBehaviour
+{
+    [SerializeField] private Image overlayPanel;
+    [SerializeField] private TutorialHandUI handUI;
+    [SerializeField] private Transform decorButtonTransform;
+
+    private void OnEnable()
+    {
+        TutorialLobbyDecorActions.ShowDecorButtonHand += Show;
+        TutorialLobbyDecorActions.ShowDecorUI         += Hide;
+    }
+
+    private void OnDisable()
+    {
+        TutorialLobbyDecorActions.ShowDecorButtonHand -= Show;
+        TutorialLobbyDecorActions.ShowDecorUI         -= Hide;
+    }
+
+    // ----------------------------------------------------------
+    //  Handlers
+    // ----------------------------------------------------------
+
+    private void Show()
+    {
+        overlayPanel.gameObject.SetActive(true);
+        overlayPanel.DOFade(0.8f, 0.4f).From(0f).OnComplete(() =>
+        {
+            handUI.Show(decorButtonTransform.position);
+        });
+    }
+
+    private void Hide()
+    {
+        handUI.Hide();
+        overlayPanel.DOFade(0f, 0.3f).OnComplete(() =>
+        {
+            overlayPanel.gameObject.SetActive(false);
+        });
+    }
+}

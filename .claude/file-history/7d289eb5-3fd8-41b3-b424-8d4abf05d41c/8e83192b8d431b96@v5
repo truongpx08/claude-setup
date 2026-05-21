@@ -1,0 +1,40 @@
+using UnityEngine;
+
+public class WorldMapTutorial : MonoBehaviour
+{
+    [SerializeField] private GameObject animFog;
+    private TutorialCtrl tutorialCtrl;
+
+    private void Start()
+    {
+        tutorialCtrl = TutorialCtrl.Instance;
+
+        if (tutorialCtrl.Lv2Start.IsActive())
+        {
+            tutorialCtrl.Lv2Start.Begin();
+            return;
+        }
+
+        if (tutorialCtrl.LobbyDecor.IsActive())
+            tutorialCtrl.LobbyDecor.Begin();
+    }
+
+    private void OnEnable()
+    {
+        TutorialLv2StartActions.ShowLobbyFog += ShowLobbyFog;
+    }
+
+    private void OnDisable()
+    {
+        TutorialLv2StartActions.ShowLobbyFog -= ShowLobbyFog;
+    }
+
+    // ----------------------------------------------------------
+    //  Tutorial handlers
+    // ----------------------------------------------------------
+
+    private void ShowLobbyFog()
+    {
+        animFog.SetActive(true);
+    }
+}

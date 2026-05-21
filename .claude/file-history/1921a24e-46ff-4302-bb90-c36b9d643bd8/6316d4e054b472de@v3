@@ -1,0 +1,135 @@
+using System;
+
+namespace _Game
+{
+    [Serializable]
+    public class TutorialData
+    {
+        #region Lv1 
+
+        // Note: Đã hoàn thành tutorial level 1 chưa
+        public bool isLevel1Completed;
+
+        public void SetLv1Completed()
+        {
+            SetTutorialComplete(ref isLevel1Completed);
+        }
+
+        #endregion
+
+        #region Lv1 End Sequence
+
+        public bool isLv1EndSequenceComplete;
+
+        public void SetLv1EndSequenceComplete()
+        {
+            SetTutorialComplete(ref isLv1EndSequenceComplete);
+        }
+
+        #endregion
+
+        #region Lv2 Start Tutorial
+
+        public bool isLv2StartTutComplete = true;
+
+        public void SetLv2StartTutComplete()
+        {
+            SetTutorialComplete(ref isLv2StartTutComplete);
+        }
+
+        #endregion
+
+        #region Lobby Decor Tutorial
+
+        public bool isLobbyDecorTutComplete;
+
+        public void SetLobbyDecorTutComplete()
+        {
+            SetTutorialComplete(ref isLobbyDecorTutComplete);
+        }
+
+        #endregion
+
+        #region Booster lv 2,4,6
+
+        public bool isTutBoosterHintComplete;
+        public bool hasClaimHint;
+
+        public bool isTutBoosterMagnifierComplete;
+        public bool hasClaimMagnifier;
+
+        public bool isTutBoosterFreezeTimeComplete;
+        public bool hasClaimFreezeTime;
+
+        #endregion
+
+        #region Set Methods
+
+        public void SetTutBoosterHintComplete()
+        {
+            isTutBoosterHintComplete = true;
+            DataSave.SaveTutorialData();
+        }
+
+        public void SetTutBoosterMagnifierComplete()
+        {
+            isTutBoosterMagnifierComplete = true;
+            DataSave.SaveTutorialData();
+        }
+
+        public void SetTutBoosterFreezeTimeComplete()
+        {
+            isTutBoosterFreezeTimeComplete = true;
+            DataSave.SaveTutorialData();
+        }
+
+        public void SetHasClaimHint(bool value)
+        {
+            hasClaimHint = value;
+            DataSave.SaveTutorialData();
+        }
+
+        public void SetHasClaimMagnifier(bool value)
+        {
+            hasClaimMagnifier = value;
+            DataSave.SaveTutorialData();
+        }
+
+        public void SetHasClaimFreezeTime(bool value)
+        {
+            hasClaimFreezeTime = value;
+            DataSave.SaveTutorialData();
+        }
+
+
+        // Note: Set has claim theo loại booster
+        public void SetHasClaim(InGameBoosterBase.EType boosterType, bool value)
+        {
+            switch (boosterType)
+            {
+                case InGameBoosterBase.EType.Hint:
+                    DataSave.TutorialData.SetHasClaimHint(value);
+                    break;
+                case InGameBoosterBase.EType.Magnifier:
+                    DataSave.TutorialData.SetHasClaimMagnifier(value);
+                    break;
+                case InGameBoosterBase.EType.FreezeTime:
+                    DataSave.TutorialData.SetHasClaimFreezeTime(value);
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region Utility Methods
+
+        // Note: Method chung để set tutorial complete và save
+        private void SetTutorialComplete(ref bool tutorialFlag)
+        {
+            tutorialFlag = true;
+            DataSave.SaveTutorialData();
+        }
+
+        #endregion
+    }
+}

@@ -1,0 +1,181 @@
+# NeverGiveUp — Architecture
+
+## Nguyên tắc cốt lõi
+
+Data-driven: thêm nội dung mới chỉ cần tạo ScriptableObject asset, không code thêm.
+
+Mọi đối tượng tách làm 4 tầng:
+
+```
+Config (ScriptableObject)     — đối tượng này là gì (bất biến)
+           ↓
+StateMachine / Logic          — hành vi, trạng thái
+           ↓
+Runtime Data                  — thay đổi trong game
+           ↓
+View                          — cập nhật sprite / animation / UI
+```
+
+View lắng nghe qua **Value\<T\>** (bind liên tục) hoặc **EventBus** (sự kiện 1 lần).
+
+Save Data là subset của Runtime — lưu lại khi tắt game.
+
+---
+
+## Pattern map
+
+| Vấn đề | Pattern |
+|---|---|
+| Thêm loại mới không code | ScriptableObject + Data-driven |
+| Đối tượng có nhiều trạng thái | StateMachine |
+| Hành vi khác nhau về chất | Strategy |
+| Các hệ thống giao tiếp | EventBus |
+| Giá trị bind xuống UI | Value\<T\> |
+| Class cần dùng class khác | DI (VContainer) |
+
+---
+
+## Scope GameCtrl vs SceneCtrl
+
+```
+GameCtrl (DontDestroyOnLoad)
+  ├─ TimeSystem        — giờ game, ngày tháng
+  ├─ InventorySystem   — đồ của player
+  ├─ SaveSystem        — đọc/ghi save data
+  ├─ StorySystem       — chạy story tuần tự
+  └─ QuestSystem       — lắng nghe EventBus, track progress
+
+SceneCtrl (per scene)
+  ├─ FarmTileSystem    — quản lý grid đất
+  ├─ CropSystem        — quản lý cây trồng
+  ├─ AnimalSystem      — quản lý con vật
+  └─ NPCSystem         — quản lý NPC + schedule
+```
+
+---
+
+## Giao tiếp qua EventBus
+
+```
+CropSystem   → emit OnCropHarvested
+AnimalSystem → emit OnAnimalFed
+NPCSystem    → emit OnNPCTalked
+TreeSystem   → emit OnTreeChopped
+                    ↓
+QuestSystem  lắng nghe → cập nhật progress
+StorySystem  lắng nghe → advance WaitForActionStep
+```
+
+---
+
+## Cây trồng
+
+```csharp
+CropData : ScriptableObject
+  string cropName
+  float growthTime
+  Sprite[] stageSprites
+  int yield, sellPrice
+
+// StateMachine states
+PlantedState → GrowingState → RipeState / WiltedState
+```
+
+---
+
+## Con vật
+
+```csharp
+AnimalData : ScriptableObject
+  string animalName
+  float moveSpeed
+  IMoveBehavior moveBehavior   // Strategy
+
+// IMoveBehavior implementations
+WalkBehavior   — bò
+HopBehavior    — gà
+WaddleBehavior — vịt
+
+// StateMachine states
+IdleState → WalkingState → EatingState → SleepingState
+```
+
+---
+
+## NPC
+
+```csharp
+NPCData : ScriptableObject
+  string npcName
+  Sprite portrait
+  DialogueLine[] dialogues
+  ScheduleEntry[] schedule     // time → location → action
+
+// Save data
+int relationshipLevel
+bool[] storyFlags
+
+// StateMachine states
+IdleState → WalkingState → WorkingState → TalkingState → SleepingState
+```
+
+---
+
+## Story System
+
+```csharp
+StoryData : ScriptableObject
+  StoryStep[] steps
+
+StoryStep : ScriptableObject   // abstract
+  UniTask Execute(StoryContext ctx)
+
+// Implementations
+DialogueStep      — show dialogue, await player click
+GiveItemStep      — add item to inventory
+WaitForActionStep — await EventBus event (eventName, matchValue, count)
+FadeScreenStep    — fade in/out
+
+// Runner
+async UniTask Play(StoryData story) {
+    foreach (var step in story.steps)
+        await step.Execute(ctx);
+}
+```
+
+---
+
+## Quest System
+
+```csharp
+QuestData : ScriptableObject
+  QuestStepData[] steps
+
+QuestStepData : ScriptableObject
+  string eventToListen   // "OnTreeChopped"
+  string matchValue      // "" = bất kỳ
+  int requiredCount
+
+// QuestSystem lắng nghe tất cả events
+// match → tăng progress → đủ count → advance step
+```
+
+---
+
+## Folder Structure
+
+```
+_Game/Scripts/
+├── Installers/         — GameCtrl, FarmSceneCtrl
+├── Config/             — CropData, AnimalData, NPCData, StoryData, QuestData
+├── Systems/            — TimeSystem, InventorySystem, CropSystem, AnimalSystem, NPCSystem, StorySystem, QuestSystem
+├── States/
+│   ├── Crop/
+│   ├── Animal/
+│   └── NPC/
+├── Strategy/
+│   └── MoveBehavior/
+├── Story/
+│   └── Steps/
+└── Views/              — CropView, AnimalView, NPCView
+```

@@ -1,0 +1,121 @@
+using _Base;
+using _Game.Sound;
+using _Game;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
+using Lofelt.NiceVibrations;
+using System;
+
+public class PanelLobby : Pixelplacement.Singleton<PanelLobby>
+{
+    [SerializeField] private GameObject top;
+    public GameObject Top => this.top;
+    [SerializeField] private GameObject middle;
+    public GameObject Middle => this.middle;
+    [SerializeField] private Button buttonPlay;
+    [SerializeField] private TextMeshProUGUI textButtonPlay;
+    public Button ButtonPlay => this.buttonPlay;
+    [SerializeField] private Button buttonSetting;
+    public Button ButtonSetting => this.buttonSetting;
+    [SerializeField] private ButtonDecorate buttonDecorate;
+    [SerializeField] private Button buttonBack;
+
+    void Start()
+    {
+        Init();
+    }
+    public void Init()
+    {
+        var curLevel = DataSave.LevelData.MaxLevel;
+        if (textButtonPlay != null)
+            textButtonPlay.text = $"Level {curLevel}";
+    }
+
+    private void Awake()
+    {
+        buttonPlay.onClick.AddListener(OnClickPlay);
+        buttonSetting.onClick.AddListener(OnClickButtonSetting);
+        buttonBack.onClick.AddListener(OnClickBack);
+        buttonBack.gameObject.SetActive(false);
+    }
+
+    private void OnEnable()
+    {
+        LobbyEvents.OnEnterBuildMode += OnEnterBuildMode;
+        LobbyEvents.OnExitBuildMode += OnExitBuildMode;
+        TutorialLv2StartActions.ShowLobbyFog += OnShowLobbyFog;
+    }
+
+    private void OnDisable()
+    {
+        LobbyEvents.OnEnterBuildMode -= OnEnterBuildMode;
+        LobbyEvents.OnExitBuildMode -= OnExitBuildMode;
+        TutorialLv2StartActions.ShowLobbyFog -= OnShowLobbyFog;
+    }
+
+
+
+    private void OnDestroy()
+    {
+        buttonPlay.onClick.RemoveAllListeners();
+        buttonSetting.onClick.RemoveAllListeners();
+        buttonBack.onClick.RemoveAllListeners();
+    }
+
+    private void OnEnterBuildMode(int _)
+    {
+        buttonPlay.gameObject.SetActive(false);
+        buttonDecorate.gameObject.SetActive(false);
+        buttonBack.gameObject.SetActive(true);
+    }
+
+    private void OnExitBuildMode()
+    {
+        buttonPlay.gameObject.SetActive(true);
+        buttonDecorate.gameObject.SetActive(true);
+        buttonBack.gameObject.SetActive(false);
+    }
+
+    private void OnClickButtonSetting()
+    {
+        SoundManager.Instance.PlayOneShot(SoundType.click);
+        _ = UIManager.Instance.Popup.ShowPopup<PopupSetting>();
+    }
+
+    private void OnClickBack()
+    {
+        SoundManager.Instance.PlayOneShot(SoundType.click);
+        LobbyEvents.OnExitBuildMode?.Invoke();
+    }
+
+    private void OnClickPlay()
+    {
+        SoundManager.Instance.PlayOneShot(SoundType.click);
+        if (!DataSave.PlayerSettings.VibrationOff)
+        {
+            if (GameConfig.Instance.dataConfigGamePlay.hapticConfig.TryGetValue(HapticType.SelectLevel, out var preset))
+            {
+                HapticPatterns.PlayPreset(preset);
+            }
+        }
+        if (DataSave.LevelData.IsLastLevel())
+        {
+            _ = UIManager.Instance.Popup.ShowPopup<PopupLocked>(popup => popup.Init("Coming soon"));
+            return;
+        }
+        if (DataSave.ResourceData.heart <= 0)
+        {
+            _ = UIManager.Instance.Popup.ShowPopup<PopupGetMoreHeart>();
+            return;
+        }
+        DataSave.LevelData.StartMaxLevel();
+        UIManager.Instance.Popup.ShowPopup<PopupPlay>(popup => popup.Init()).Forget(); ;
+    }
+    private void OnShowLobbyFog()
+    {
+        top.SetActive(false);
+        middle.SetActive(false);
+    }
+}

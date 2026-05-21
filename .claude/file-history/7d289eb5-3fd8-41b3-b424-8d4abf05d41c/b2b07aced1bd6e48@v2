@@ -1,0 +1,52 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+/// <summary>
+/// UI phủ toàn màn hình cho NPC trong Tutorial Lobby Decor.
+/// Hiện khi ShowNPC fired, ẩn khi player ấn button hoặc HideNPC fired.
+/// </summary>
+public class TutorialLobbyDecorNPCDialog : MonoBehaviour
+{
+    [SerializeField] private GameObject panel;
+    [SerializeField] private Button confirmButton;
+
+    private void Awake()
+    {
+        confirmButton.onClick.AddListener(OnClickConfirm);
+    }
+
+    private void OnEnable()
+    {
+        TutorialLobbyDecorActions.ShowNPC += ShowNPC;
+        TutorialLobbyDecorActions.HideNPC += HideNPC;
+    }
+
+    private void OnDisable()
+    {
+        TutorialLobbyDecorActions.ShowNPC -= ShowNPC;
+        TutorialLobbyDecorActions.HideNPC -= HideNPC;
+    }
+
+    // ----------------------------------------------------------
+    //  Handlers
+    // ----------------------------------------------------------
+
+    private void ShowNPC()
+    {
+        panel.SetActive(true);
+    }
+
+    private void HideNPC()
+    {
+        panel.SetActive(false);
+    }
+
+    // ----------------------------------------------------------
+    //  Button
+    // ----------------------------------------------------------
+
+    private void OnClickConfirm()
+    {
+        TutorialCtrl.Instance.LobbyDecor.HideNPC();
+    }
+}

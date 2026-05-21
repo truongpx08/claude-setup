@@ -1,0 +1,61 @@
+# NeverGiveUp — Game Design Document
+
+## Thể loại
+Farming game — xây dựng trang trại, trồng cây, nuôi con vật, giao tiếp NPC.
+
+---
+
+## Onboarding (Lần đầu vào game)
+
+Chào đón ở làng:
+1. Gặp trưởng làng
+2. Đi tới vùng đất hoang
+3. Nhận chiếc rìu cũ của trưởng làng
+4. Chặt cây dọn đất
+5. Ngủ tạm nhà trưởng làng
+6. Con gái trưởng làng tặng đồ ăn
+7. Làm căn nhà đầu tiên
+
+---
+
+## Hệ thống Cây trồng
+
+Mỗi loại cây là 1 data asset — thêm cây mới không cần code.
+
+Thuộc tính mỗi cây: tên, thời gian lớn, sprite theo giai đoạn, sản lượng, giá bán.
+
+Trạng thái: Planted → Growing → Ripe / Wilted
+
+---
+
+## Hệ thống Con vật
+
+Mỗi con vật là 1 data asset. Con vật di chuyển khác nhau về chất (bò đi, gà nhảy, vịt lạch bạch).
+
+Trạng thái: Idle → Walking → Eating → Sleeping
+
+---
+
+## Hệ thống NPC
+
+Mỗi NPC có lịch sinh hoạt theo giờ — sáng ra đồng, tối về nhà.
+
+NPC có relationship level với player — tăng khi nói chuyện, tặng quà.
+
+---
+
+## Story System
+
+Narrative tuyến tính — game dẫn dắt người chơi theo thứ tự, không phải quest tự do.
+
+Thêm story mới chỉ cần tạo data asset, kéo thả các step vào.
+
+Step types: Dialogue, GiveItem, WaitForAction, FadeScreen.
+
+---
+
+## Quest System
+
+Nhiệm vụ tự do — player tự làm theo tiến độ của mình.
+
+Thêm quest mới chỉ cần tạo data asset, điền điều kiện hoàn thành.

@@ -1,0 +1,8 @@
+# Memory Index
+
+- [Project Overview](project_nevergiveup.md) — Unity game project NeverGiveUp, dùng custom framework (_Base), chưa có _Game/ folder
+- [Farming Architecture](project_farming_architecture.md) — Kiến trúc tổng thể farming game: 4 tầng, data-driven, patterns, hệ thống
+- [feedback_writing_skills.md](feedback_writing_skills.md) — Luôn invoke skill `writing-skills` trước khi viết bất kỳ SKILL.md nào
+- [feedback_terminology_language.md](feedback_terminology_language.md) — Thuật ngữ tiếng Anh — mở ngoặc tiếng Việt lần đầu, không lặp lại ở các lần sau
+- [feedback_gitnexus_toolsearch.md](feedback_gitnexus_toolsearch.md) — GitNexus là deferred tools: PHẢI gọi ToolSearch trước, không fallback sang Explore/Grep
+- [reference_claude_config_dir.md](reference_claude_config_dir.md) — `C:\Users\ADMIN\.claude` — thư mục gốc chứa CLAUDE.md, settings.json, skills, hooks

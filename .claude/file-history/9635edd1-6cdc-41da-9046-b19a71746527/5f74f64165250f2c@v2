@@ -1,0 +1,83 @@
+# NeverGiveUp — Context cho AI
+
+## Dự án
+
+**NeverGiveUp** — Unity game dùng Base Framework.
+
+- `_Base/` — framework tái sử dụng, không chứa logic game
+- `_Game/` — logic game cụ thể của project này
+
+---
+
+## Stack
+
+| Thư viện | Vai trò |
+|---|---|
+| VContainer | Dependency Injection |
+| StateMachine (custom) | Quản lý flow scene và entity |
+| EventBus (custom) | Giao tiếp giữa các hệ thống |
+| Value\<T\> (custom) | Bind giá trị từ Model xuống UI |
+| UniTask | Async/Await thay coroutine |
+
+---
+
+## Kiến trúc Scope
+
+```
+GameCtrl  (GameCtrlBase)    — DontDestroyOnLoad, tồn tại suốt game
+                               GameBus tự đăng ký ở đây
+    └── [SceneCtrl] (SceneCtrlBase) — tồn tại 1 scene, auto-dispose khi unload
+                                       SceneBus tự đăng ký ở đây
+```
+
+Cần set **Parent** trong Unity Inspector của SceneCtrl trỏ về GameCtrl.
+
+---
+
+## 4 trụ cột — khi nào dùng gì
+
+| Tình huống | Dùng |
+|---|---|
+| Class A cần dùng class B | **DI** — `[Inject]` |
+| Object có nhiều trạng thái | **StateMachine** — `StateBase`, `ChangeState()` |
+| 2 hệ thống giao tiếp, không biết nhau | **Bus** — `Send` / `On` / `Off` |
+| Giá trị thay đổi cần cập nhật UI | **Value\<T\>** — `.Current`, `On` / `Off` |
+
+---
+
+## Convention
+
+```csharp
+// Ctrl = entry point của scene: DI + StateMachine + enum State
+// ConfigureDependencies() — nơi duy nhất đăng ký dependency
+// State luôn Lifetime.Singleton — StateMachine cache và tái dùng
+// Message là struct — không allocation, không null
+// On() trong OnEnter/OnEnable, Off() trong OnExit/OnDisable — luôn thành cặp
+// Không để public field — dùng method hoặc Value<T>
+```
+
+---
+
+## Folder Structure
+
+```
+_Base/Scripts/Core/
+├── DI/             — CtrlBase, GameCtrlBase, SceneCtrlBase
+├── StateMachine/   — StateBase, StateCtrlBase, StateMachineBuilder
+├── EventBus/       — GameBus, SceneBus
+└── Value/          — Value<T>
+
+_Game/Scripts/
+├── Installers/     — GameCtrl, [Scene]Ctrl
+├── States/         — PlayingState, WinState, LoseState...
+└── ...             — Player, Services, UI...
+```
+
+---
+
+## Đọc thêm
+
+- Setup từ đầu: `_Base/README.md`
+- Chi tiết từng module: `_Base/Scripts/Core/[Module]/README.md`
+- Game design (tính năng, nội dung): `GAME_DESIGN.md`
+- Kiến trúc code (patterns, hệ thống): `ARCHITECTURE.md`

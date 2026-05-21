@@ -1,0 +1,163 @@
+# Scene Transitions + Save/Load Position
+
+## Contents
+- MapTransitionTrigger
+- SceneLoader (UniTask wrapper)
+- SceneCtrl nhận OnMapLoaded
+- WorldSaveData
+- Save flow
+- Load flow
+
+---
+
+## MapTransitionTrigger
+
+Đặt Collider (isTrigger) ở rìa map hoặc cửa.
+
+```csharp
+public class MapTransitionTrigger : MonoBehaviour
+{
+    [SerializeField] string targetMapId;
+    [SerializeField] string targetEntryId;
+
+    [Inject] WorldSystem _worldSystem;
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+            _worldSystem.TransitionTo(targetMapId, targetEntryId).Forget();
+    }
+}
+```
+
+Dùng `[Inject]` qua VContainer — không dùng `FindObjectOfType`.
+
+---
+
+## SceneLoader
+
+Wrapper UniTask để load/unload scene additive.
+
+```csharp
+public class SceneLoader
+{
+    public async UniTask LoadAdditive(string sceneName)
+    {
+        await SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive)
+                          .ToUniTask();
+        SceneManager.SetActiveScene(SceneManager.GetSceneByName(sceneName));
+    }
+
+    public async UniTask UnloadScene(string sceneName)
+    {
+        var scene = SceneManager.GetSceneByName(sceneName);
+        if (scene.isLoaded)
+            await SceneManager.UnloadSceneAsync(scene).ToUniTask();
+    }
+}
+```
+
+---
+
+## SceneCtrl nhận OnMapLoaded
+
+Mỗi SceneCtrl lắng nghe `OnMapLoaded` để đặt player đúng vị trí.
+
+```csharp
+// trong FarmSceneCtrl (hoặc TownSceneCtrl)
+protected override void OnEnter()
+{
+    GameBus.On<OnMapLoaded>(HandleMapLoaded);
+}
+
+protected override void OnExit()
+{
+    GameBus.Off<OnMapLoaded>(HandleMapLoaded);
+}
+
+void HandleMapLoaded(OnMapLoaded msg)
+{
+    if (msg.useEntryPoint)
+    {
+        // tìm EntryPoint trong MapConfig → teleport player
+        if (_mapConfig.TryGetEntry(msg.entryId, out var entry))
+            PlacePlayer(entry.position, entry.rotationY);
+    }
+    else
+    {
+        // mở game từ save → đặt nguyên vị trí đã lưu
+        PlacePlayer(msg.savedPosition, msg.savedRotationY);
+    }
+}
+
+void PlacePlayer(Vector3 pos, float rotY)
+{
+    _player.transform.SetPositionAndRotation(
+        pos,
+        Quaternion.Euler(0f, rotY, 0f)
+    );
+}
+```
+
+---
+
+## WorldSaveData
+
+```csharp
+[Serializable]
+public class WorldSaveData
+{
+    public string currentMapId;
+    public SerializableVector3 playerPosition;
+    public float playerRotationY;
+}
+
+[Serializable]
+public struct SerializableVector3
+{
+    public float x, y, z;
+
+    public static implicit operator Vector3(SerializableVector3 v)
+        => new Vector3(v.x, v.y, v.z);
+
+    public static implicit operator SerializableVector3(Vector3 v)
+        => new SerializableVector3 { x = v.x, y = v.y, z = v.z };
+}
+```
+
+---
+
+## Save flow
+
+Gọi tại 2 thời điểm:
+1. **Trước khi unload scene** (trong `WorldSystem.TransitionTo`)
+2. **Khi tắt game** (`Application.quitting`)
+
+```csharp
+void SaveWorldState()
+{
+    var data = new WorldSaveData
+    {
+        currentMapId    = _currentMap.mapId,
+        playerPosition  = GetPlayerPosition(),
+        playerRotationY = GetPlayerRotationY(),
+    };
+    _saveSystem.Save("world", data);
+}
+```
+
+---
+
+## Load flow
+
+```
+1. Boot scene khởi động
+2. SaveSystem.Load("world") → WorldSaveData
+3. Nếu không có save → dùng default (farm map, vị trí mặc định)
+4. WorldSystem.LoadSavedMap(data)
+   → LoadAdditive(farm scene)
+   → Send OnMapLoaded { useEntryPoint = false, savedPosition = ... }
+5. FarmSceneCtrl nhận → đặt player tại savedPosition
+```
+
+Boot scene là scene nhẹ, không có gì ngoài GameCtrl — load xong thì swap sang map scene.
