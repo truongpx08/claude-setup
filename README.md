@@ -4,7 +4,16 @@
 
 StatusLine hiển thị thông tin context window, model và quota trên giao diện Claude Code.
 
-**1. Tạo file `statusline.js`** trong `~/.claude/`:
+Có hai phiên bản script — chọn theo môi trường:
+
+| File | Môi trường | Yêu cầu |
+|------|-----------|---------|
+| `statusline.js` | Windows / có Node.js | Node.js |
+| `statusline.sh` | Linux / macOS / có bash | bash + jq |
+
+**1. Tạo file script** trong `~/.claude/`:
+
+**`statusline.js`** (Windows / Node.js):
 
 ```js
 #!/usr/bin/env node
@@ -29,13 +38,56 @@ process.stdin.on('end', () => {
 });
 ```
 
+**`statusline.sh`** (Linux / macOS / bash):
+
+```sh
+#!/usr/bin/env bash
+input=$(cat)
+
+model=$(echo "$input" | jq -r '.model.display_name // .model.id // "unknown"')
+
+ctx_used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+if [ -n "$ctx_used" ]; then
+  ctx_str=$(printf "ctx:%.0f%%" "$ctx_used")
+else
+  ctx_str="ctx:--"
+fi
+
+five=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+week=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+quota_str=""
+if [ -n "$five" ]; then
+  quota_str=$(printf "5h:%.0f%%" "$five")
+fi
+if [ -n "$week" ]; then
+  [ -n "$quota_str" ] && quota_str="$quota_str "
+  quota_str="${quota_str}$(printf "7d:%.0f%%" "$week")"
+fi
+[ -z "$quota_str" ] && quota_str="quota:--"
+
+printf "%s | %s | %s" "$ctx_str" "$model" "$quota_str"
+```
+
+Sau khi tạo file `.sh`, cấp quyền thực thi: `chmod +x ~/.claude/statusline.sh`
+
 **2. Thêm vào `~/.claude/settings.json`:**
 
+Windows (Node.js):
 ```json
 {
   "statusLine": {
     "type": "command",
     "command": "node ~/.claude/statusline.js"
+  }
+}
+```
+
+Linux / macOS (bash):
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
   }
 }
 ```
