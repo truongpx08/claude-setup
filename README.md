@@ -138,7 +138,7 @@ Sau khi tạo file, Claude sẽ tự động đọc và áp dụng trong các se
 
 ---
 
-## Skills đã thêm
+## Skills Hạnh đã thêm
 
 Skills là các slash command tùy chỉnh, lưu trong `~/.claude/skills/<skill-name>/SKILL.md`.
 
