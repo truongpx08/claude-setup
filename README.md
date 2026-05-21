@@ -4,16 +4,16 @@
 
 StatusLine hiển thị thông tin context window, model và quota trên giao diện Claude Code.
 
-Có hai phiên bản script — chọn theo môi trường:
+Có hai phiên bản script — chọn theo hệ điều hành:
 
-| File | Môi trường | Yêu cầu |
-|------|-----------|---------|
-| `statusline.js` | Windows / có Node.js | Node.js |
-| `statusline.sh` | Linux / macOS / có bash | bash + jq |
+| File | Hệ điều hành | Yêu cầu |
+|------|-------------|---------|
+| `statusline.js` | Windows | Node.js |
+| `statusline.sh` | macOS | bash + jq |
 
 **1. Tạo file script** trong `~/.claude/`:
 
-**`statusline.js`** (Windows / Node.js):
+**`statusline.js`** (Windows):
 
 ```js
 #!/usr/bin/env node
@@ -38,7 +38,7 @@ process.stdin.on('end', () => {
 });
 ```
 
-**`statusline.sh`** (Linux / macOS / bash):
+**`statusline.sh`** (macOS):
 
 ```sh
 #!/usr/bin/env bash
@@ -72,7 +72,7 @@ Sau khi tạo file `.sh`, cấp quyền thực thi: `chmod +x ~/.claude/statusli
 
 **2. Thêm vào `~/.claude/settings.json`:**
 
-Windows (Node.js):
+Windows:
 ```json
 {
   "statusLine": {
@@ -82,7 +82,7 @@ Windows (Node.js):
 }
 ```
 
-Linux / macOS (bash):
+macOS:
 ```json
 {
   "statusLine": {
