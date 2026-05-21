@@ -109,7 +109,7 @@ Memory là các file `.md` giúp Claude ghi nhớ hành vi qua các session. Lư
 ~/.claude/projects/<tên-project>/memory/
 ```
 
-Dự án này có 3 memory sau:
+3 memory vừa được Hạnh thêm:
 
 | File | Nội dung |
 |------|----------|
